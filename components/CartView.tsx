@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { CartItem, TFunction } from '../types';
 import { Icon } from './Icon';
 
@@ -7,17 +7,27 @@ interface CartViewProps {
   cart: CartItem[];
   updateCartQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
-  onClose: () => void;
   t: TFunction;
 }
 
 type CheckoutState = 'idle' | 'processing' | 'success' | 'failed';
 
-const CartView: React.FC<CartViewProps> = ({ cart, updateCartQuantity, clearCart, onClose, t }) => {
+const CartView: React.FC<CartViewProps> = ({ cart, updateCartQuantity, clearCart, t }) => {
   const [checkoutState, setCheckoutState] = useState<CheckoutState>('idle');
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const formatCurrency = (value: number) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KSH' }).format(value);
   
+  useEffect(() => {
+    // If checkout is successful or failed, reset to idle after 5 seconds
+    if (checkoutState === 'success' || checkoutState === 'failed') {
+      const timer = setTimeout(() => {
+        setCheckoutState('idle');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [checkoutState]);
+
+
   const handleCheckout = () => {
     setCheckoutState('processing');
     setTimeout(() => {
@@ -31,35 +41,29 @@ const CartView: React.FC<CartViewProps> = ({ cart, updateCartQuantity, clearCart
     }, 3000);
   };
 
-  const handleClose = () => {
-    if (checkoutState === 'processing') return;
-    onClose();
-  }
-
   const renderCheckoutContent = () => {
     switch (checkoutState) {
         case 'processing':
             return (
-                <div className="text-center p-8">
+                <div className="text-center p-8 flex flex-col items-center justify-center flex-grow">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-brand-green mx-auto"></div>
                     <h3 className="text-xl font-bold mt-4">{t('checkout_processing')}</h3>
-                    <p>Please check your phone to enter your M-Pesa PIN.</p>
+                    <p className="text-sm">Please check your phone to enter your M-Pesa PIN.</p>
                 </div>
             );
         case 'success':
             return (
-                <div className="text-center p-8">
+                <div className="text-center p-8 flex flex-col items-center justify-center flex-grow">
                     <div className="mx-auto bg-green-100 rounded-full h-20 w-20 flex items-center justify-center">
                         <svg className="h-12 w-12 text-brand-green" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
                     </div>
                     <h3 className="text-xl font-bold mt-4 text-brand-green">{t('checkout_success')}</h3>
-                    <p>You will receive an SMS confirmation shortly.</p>
-                    <button onClick={handleClose} className="mt-6 bg-brand-green text-white py-2 px-6 rounded-lg">{t('close')}</button>
+                    <p className="text-sm">You can start a new order now.</p>
                 </div>
             );
         case 'failed':
             return (
-                <div className="text-center p-8">
+                <div className="text-center p-8 flex flex-col items-center justify-center flex-grow">
                     <div className="mx-auto bg-red-100 rounded-full h-20 w-20 flex items-center justify-center">
                         <svg className="h-12 w-12 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </div>
@@ -71,29 +75,29 @@ const CartView: React.FC<CartViewProps> = ({ cart, updateCartQuantity, clearCart
             return (
                 <>
                 {cart.length > 0 ? (
-                    <div className="p-6 flex-grow overflow-y-auto">
+                    <div className="p-4 flex-grow overflow-y-auto">
                         {cart.map(item => (
                             <div key={item.product.id} className="flex items-center justify-between py-3 border-b border-gray-200">
-                                <div className="flex items-center">
-                                    <img src={item.product.imageUrl} alt={item.product.name} className="w-16 h-16 rounded-md object-cover mr-4"/>
-                                    <div>
-                                        <p className="font-semibold">{item.product.name}</p>
+                                <div className="flex items-center flex-1 min-w-0">
+                                    <img src={item.product.imageUrl} alt={item.product.name} className="w-12 h-12 rounded-md object-cover mr-3"/>
+                                    <div className="min-w-0">
+                                        <p className="font-semibold truncate">{item.product.name}</p>
                                         <p className="text-sm text-gray-500">{formatCurrency(item.product.price)}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-1 ml-2">
                                     <button onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)} className="p-1 rounded-full bg-gray-200 hover:bg-gray-300"><Icon name="minus" className="w-4 h-4"/></button>
-                                    <span>{item.quantity}</span>
+                                    <span className="w-6 text-center">{item.quantity}</span>
                                     <button onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)} className="p-1 rounded-full bg-gray-200 hover:bg-gray-300"><Icon name="plus" className="w-4 h-4"/></button>
                                     <button onClick={() => updateCartQuantity(item.product.id, 0)} className="p-1 text-red-500 hover:text-red-700"><Icon name="trash" className="w-5 h-5"/></button>
                                 </div>
                             </div>
                         ))}
                     </div>
-                ) : <div className="p-6 text-center text-gray-500 flex-grow">{t('empty_cart')}</div>}
+                ) : <div className="p-6 text-center text-gray-500 flex-grow flex items-center justify-center">{t('empty_cart')}</div>}
 
                 {cart.length > 0 && (
-                    <div className="p-6 border-t bg-gray-50">
+                    <div className="p-4 border-t bg-gray-50">
                         <div className="flex justify-between items-center font-bold text-lg mb-4">
                             <span>{t('subtotal')}:</span>
                             <span>{formatCurrency(subtotal)}</span>
@@ -109,14 +113,14 @@ const CartView: React.FC<CartViewProps> = ({ cart, updateCartQuantity, clearCart
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
-      <div className="bg-brand-cream rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-2xl font-bold">{t('your_cart')}</h2>
-          <button onClick={handleClose} className="p-2 rounded-full hover:bg-gray-200"><Icon name="x" className="w-6 h-6"/></button>
-        </div>
-        {renderCheckoutContent()}
+    <div className="bg-white/60 rounded-lg shadow-md w-full max-h-[80vh] flex flex-col">
+      <div className="flex justify-between items-center p-4 border-b border-brand-brown/10">
+        <h2 className="text-2xl font-bold">{t('your_cart')}</h2>
+        {cart.length > 0 && checkoutState === 'idle' && (
+             <button onClick={clearCart} className="text-sm text-red-600 hover:underline">Clear all</button>
+        )}
       </div>
+      {renderCheckoutContent()}
     </div>
   );
 };

@@ -1,35 +1,46 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import type { User, Product, CartItem, Language } from './types';
 import { UserRole } from './types';
 import Header from './components/Header';
 import BuyerDashboard from './components/BuyerDashboard';
 import SellerDashboard from './components/SellerDashboard';
+import Auth from './components/Auth';
 import { translations } from './lib/i18n';
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User>({
-    id: 'user-1',
-    name: 'Jane Doe',
-    role: UserRole.Buyer,
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [language, setLanguage] = useState<Language>('en');
   const [cart, setCart] = useState<CartItem[]>([]);
+  const cartRef = useRef<HTMLDivElement>(null);
 
   const t = useCallback((key: keyof typeof translations.en) => {
     return translations[language][key] || key;
   }, [language]);
 
   const toggleRole = () => {
+    if (!currentUser) return;
     setCurrentUser((prevUser) => ({
-      ...prevUser,
-      role: prevUser.role === UserRole.Buyer ? UserRole.Seller : UserRole.Buyer,
-      name: prevUser.role === UserRole.Buyer ? 'Farmer John' : 'Jane Doe'
+      ...prevUser!,
+      role: prevUser!.role === UserRole.Buyer ? UserRole.Seller : UserRole.Buyer,
     }));
   };
   
   const toggleLanguage = () => {
     setLanguage(prevLang => prevLang === 'en' ? 'sw' : 'en');
+  };
+
+  const handleLogin = (name: string, role: UserRole) => {
+    setCurrentUser({
+      id: `user-${Date.now()}`,
+      name,
+      role,
+    });
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setCart([]); // Clear cart on logout
   };
 
   const addToCart = (product: Product, quantity: number) => {
@@ -61,6 +72,14 @@ const App: React.FC = () => {
     setCart([]);
   }
 
+  const handleCartIconClick = () => {
+    cartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  if (!currentUser) {
+    return <Auth onLogin={handleLogin} t={t} />;
+  }
+
   return (
     <div className="bg-brand-cream min-h-screen font-sans text-brand-brown">
       <Header 
@@ -68,8 +87,10 @@ const App: React.FC = () => {
         cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
         onToggleRole={toggleRole}
         onToggleLanguage={toggleLanguage}
+        onLogout={handleLogout}
         language={language}
         t={t}
+        onCartIconClick={handleCartIconClick}
       />
       <main className="p-4 md:p-8">
         {currentUser.role === UserRole.Buyer ? (
@@ -79,6 +100,7 @@ const App: React.FC = () => {
             updateCartQuantity={updateCartQuantity}
             clearCart={clearCart}
             t={t} 
+            cartRef={cartRef}
           />
         ) : (
           <SellerDashboard t={t} />

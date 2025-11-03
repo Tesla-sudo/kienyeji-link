@@ -53,6 +53,13 @@ export const translations: Record<Language, Record<string, string>> = {
     edit: 'Edit',
     delete: 'Delete',
 
+    // Auth
+    login_signup: 'Login or Sign Up',
+    your_name: 'Your Name',
+    choose_role: 'Choose your role',
+    login: 'Enter Kienyeji Link',
+    logout: 'Logout',
+
 
     // Footer
     footer_empowering: 'Empowering local farmers, one sale at a time.',
@@ -108,6 +115,13 @@ export const translations: Record<Language, Record<string, string>> = {
     off_sale: 'Haiuzwi',
     edit: 'Hariri',
     delete: 'Futa',
+
+    // Auth
+    login_signup: 'Ingia au Jisajili',
+    your_name: 'Jina Lako',
+    choose_role: 'Chagua jukumu lako',
+    login: 'Ingia Kienyeji Link',
+    logout: 'Toka',
 
     // Footer
     footer_empowering: 'Tunawawezesha wakulima wa ndani, mauzo moja kwa wakati mmoja.',
